@@ -1,0 +1,19 @@
+auth:
+  clientId: ### required
+  clientSecret: ### required
+api:
+  base: https://api.aho8.com ### required, default is https://api.aho8.com
+  path: /merchant/orders ### required, default is /merchant/orders
+search:
+  fromDate: 2019-08-01 ### optional, format is YYYY-MM-DD
+  toDate: 2019-10-01 ### optional, format is YYYY-MM-DD
+  side: ### optional, options is BUY and SELL, leave it empty means both
+  ticker: ### optional, e.g. usdtusd, empty means search all tickers
+  status:
+    ### optional, you can remove or mark each item below.
+    ### mark all the item with "#" if you need to search order with all status
+    # - OPEN # user finish verification of bank card
+    # - REVIEWED # user provide screenshot of receipt
+    - PAID # admin confirmed that payment finished
+    - COMPLETED # admin conversion finished
+    - SETTLED # accountancy finished
