@@ -137,6 +137,9 @@ type MerchantOrder struct {
 	// Format: date-time
 	ExecutedAt *strfmt.DateTime `json:"executedAt"`
 
+	// extra info
+	ExtraInfo string `json:"extraInfo,omitempty"`
+
 	// id
 	// Required: true
 	ID *string `json:"id"`

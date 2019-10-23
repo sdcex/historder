@@ -227,6 +227,7 @@ func addCSVHeader(csvFile string) error {
 	data = append(data, "FeeCurrency")
 	data = append(data, "Amount")
 	data = append(data, "Quantity")
+	data = append(data, "ExtraInfo")
 	err = wr.Write(data)
 	if err != nil {
 		return err
@@ -279,5 +280,6 @@ func mapOrder(order *models.MerchantOrder) []string {
 	}
 	data = append(data, *order.CurrencyQuote.Amount.Amount)
 	data = append(data, *order.CurrencyQuote.Quantity.Quantity)
+	data = append(data, order.ExtraInfo)
 	return data
 }
