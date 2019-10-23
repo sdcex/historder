@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -44,6 +45,10 @@ type searchConfig struct {
 }
 
 func main() {
+	err := os.Chdir(filepath.Dir(os.Args[0]))
+	if err != nil {
+		panic(err)
+	}
 	auth, api, search, err := getConfig()
 	if err != nil {
 		return
