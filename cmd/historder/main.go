@@ -60,22 +60,6 @@ func main() {
 	var (
 		pageIndex int64
 		count     int
-		titles    = []string{
-			"QRID",
-			"Status",
-			"Ticker",
-			"Side",
-			"CreatedAt",
-			"ExecutedAt",
-			"PayFundDetail",
-			"ReceiveFundDetail",
-			"BuyUnitPrice",
-			"SellUnitPrice",
-			"FeeValue",
-			"FeeCurrency",
-			"Amount",
-			"Quantity",
-			"ExtraInfo"}
 	)
 	tb := models.NewTable(titles)
 	for {
@@ -220,25 +204,50 @@ func getRecord(api apiConfig, search searchConfig, token string, pageSz, pageInd
 	return body.Result, nil
 }
 
+var (
+	titles = []string{
+		"QRID",
+		"CreatedAt",
+		"ExecutedAt",
+		"PayFundDetail",
+		"ReceiveFundDetail",
+		"Status",
+		"Ticker",
+		"Side",
+		"Price",
+		"Pay",
+		"Receive",
+		"FeeValue",
+		"FeeCurrency",
+		"ExtraInfo"}
+)
+
 func mapOrder(order *models.MerchantOrder) []string {
 	data := []string{}
 	data = append(data, *order.CounterPartyRequestID)
-	data = append(data, *order.Status)
-	data = append(data, order.Ticker)
-	data = append(data, *order.Side)
 	data = append(data, order.CreatedAt.String())
 	data = append(data, order.ExecutedAt.String())
 	data = append(data, order.PayFundDetail)
 	data = append(data, order.ReceiveFundDetail)
-	if order.CurrencyQuote.BuyUnitPrice != nil {
-		data = append(data, strconv.FormatFloat(*order.CurrencyQuote.BuyUnitPrice.Price, 'f', 4, 64))
+	data = append(data, *order.Status)
+	data = append(data, order.Ticker)
+	data = append(data, *order.Side)
+	if *order.Side == "BUY" {
+		if order.CurrencyQuote.BuyUnitPrice != nil {
+			data = append(data, strconv.FormatFloat(*order.CurrencyQuote.BuyUnitPrice.Price, 'f', 4, 64))
+		} else {
+			data = append(data, "")
+		}
+		data = append(data, *order.CurrencyQuote.Amount.Amount)     // pay
+		data = append(data, *order.CurrencyQuote.Quantity.Quantity) // receive
 	} else {
-		data = append(data, "")
-	}
-	if order.CurrencyQuote.SellUnitPrice != nil {
-		data = append(data, strconv.FormatFloat(*order.CurrencyQuote.SellUnitPrice.Price, 'f', 4, 64))
-	} else {
-		data = append(data, "")
+		if order.CurrencyQuote.SellUnitPrice != nil {
+			data = append(data, strconv.FormatFloat(*order.CurrencyQuote.SellUnitPrice.Price, 'f', 4, 64))
+		} else {
+			data = append(data, "")
+		}
+		data = append(data, *order.CurrencyQuote.Quantity.Quantity) // pay
+		data = append(data, *order.CurrencyQuote.Amount.Amount)     // receive
 	}
 	if order.CurrencyQuote.Fee != nil {
 		data = append(data, *order.CurrencyQuote.Fee.Value)
@@ -246,8 +255,6 @@ func mapOrder(order *models.MerchantOrder) []string {
 	} else {
 		data = append(data, "", "")
 	}
-	data = append(data, *order.CurrencyQuote.Amount.Amount)
-	data = append(data, *order.CurrencyQuote.Quantity.Quantity)
 	data = append(data, order.ExtraInfo)
 	return data
 }
