@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/tls"
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -61,13 +60,24 @@ func main() {
 	var (
 		pageIndex int64
 		count     int
+		titles    = []string{
+			"QRID",
+			"Status",
+			"Ticker",
+			"Side",
+			"CreatedAt",
+			"ExecutedAt",
+			"PayFundDetail",
+			"ReceiveFundDetail",
+			"BuyUnitPrice",
+			"SellUnitPrice",
+			"FeeValue",
+			"FeeCurrency",
+			"Amount",
+			"Quantity",
+			"ExtraInfo"}
 	)
-	fileName := time.Now().Format(time.RFC3339) + ".csv"
-	err = addCSVHeader(fileName)
-	if err != nil {
-		log.Error(err)
-		return
-	}
+	tb := models.NewTable(titles)
 	for {
 		orders, err := getRecord(api, search, token, 500, pageIndex)
 		if err != nil || len(orders) == 0 {
@@ -75,12 +85,18 @@ func main() {
 		}
 		count += len(orders)
 		log.Infof("collect %v records", count)
-		err = appendCSVData(fileName, orders)
-		if err != nil {
-			log.Error(err)
-			break
+		for _, order := range orders {
+			row := mapOrder(order)
+			err = tb.AddRowList(row)
+			if err != nil {
+				log.Error(err)
+			}
 		}
 		pageIndex++
+	}
+	err = tb.Save()
+	if err != nil {
+		log.Error(err)
 	}
 	log.Infof("%v rows are converted to csv", count)
 	log.Info("Tool exit.")
@@ -202,54 +218,6 @@ func getRecord(api apiConfig, search searchConfig, token string, pageSz, pageInd
 	}
 	log.Infof("Receive %v items", len(body.Result))
 	return body.Result, nil
-}
-
-func addCSVHeader(csvFile string) error {
-	file, err := os.OpenFile(csvFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0755)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	wr := csv.NewWriter(file)
-
-	data := []string{}
-	data = append(data, "CounterPartyRequestID")
-	data = append(data, "Status")
-	data = append(data, "Ticker")
-	data = append(data, "Side")
-	data = append(data, "CreatedAt")
-	data = append(data, "ExecutedAt")
-	data = append(data, "PayFundDetail")
-	data = append(data, "ReceiveFundDetail")
-	data = append(data, "BuyUnitPrice")
-	data = append(data, "SellUnitPrice")
-	data = append(data, "FeeValue")
-	data = append(data, "FeeCurrency")
-	data = append(data, "Amount")
-	data = append(data, "Quantity")
-	data = append(data, "ExtraInfo")
-	err = wr.Write(data)
-	if err != nil {
-		return err
-	}
-	wr.Flush()
-	return nil
-}
-
-func appendCSVData(csvFile string, orders []*models.MerchantOrder) error {
-	file, err := os.OpenFile(csvFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0755)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	wr := csv.NewWriter(file)
-
-	data := [][]string{}
-	for _, order := range orders {
-		row := mapOrder(order)
-		data = append(data, row)
-	}
-	return wr.WriteAll(data)
 }
 
 func mapOrder(order *models.MerchantOrder) []string {
