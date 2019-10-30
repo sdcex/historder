@@ -78,6 +78,11 @@ func main() {
 		}
 		pageIndex++
 	}
+
+	err = calcSum(tb)
+	if err != nil {
+		log.Error(err)
+	}
 	err = tb.Save()
 	if err != nil {
 		log.Error(err)
@@ -215,7 +220,9 @@ var (
 		"Ticker",
 		"Side",
 		"Price",
+		"Pay Coin",
 		"Pay",
+		"Receive Coin",
 		"Receive",
 		"FeeValue",
 		"FeeCurrency",
@@ -238,7 +245,9 @@ func mapOrder(order *models.MerchantOrder) []string {
 		} else {
 			data = append(data, "")
 		}
+		data = append(data, *order.CurrencyQuote.Amount.Currency)   // pay currency
 		data = append(data, *order.CurrencyQuote.Amount.Amount)     // pay
+		data = append(data, *order.CurrencyQuote.Quantity.Currency) // receive currency
 		data = append(data, *order.CurrencyQuote.Quantity.Quantity) // receive
 	} else {
 		if order.CurrencyQuote.SellUnitPrice != nil {
@@ -246,7 +255,9 @@ func mapOrder(order *models.MerchantOrder) []string {
 		} else {
 			data = append(data, "")
 		}
+		data = append(data, *order.CurrencyQuote.Quantity.Currency) // pay currency
 		data = append(data, *order.CurrencyQuote.Quantity.Quantity) // pay
+		data = append(data, *order.CurrencyQuote.Amount.Currency)   // receive currency
 		data = append(data, *order.CurrencyQuote.Amount.Amount)     // receive
 	}
 	if order.CurrencyQuote.Fee != nil {
@@ -257,4 +268,52 @@ func mapOrder(order *models.MerchantOrder) []string {
 	}
 	data = append(data, order.ExtraInfo)
 	return data
+}
+
+func calcSum(tb *models.Table) error {
+	payCoinTitle := "Pay Coin"
+	rcvCoinTitle := "Receive Coin"
+	coinsSum := map[string]float64{}
+	var (
+		payCoinIndex int
+		rcvCoinIndex int
+		ok           bool
+	)
+	if payCoinIndex, ok = tb.GetTitleIndex(payCoinTitle); !ok {
+		return fmt.Errorf("unknown title %v", payCoinTitle)
+	}
+	if rcvCoinIndex, ok = tb.GetTitleIndex(rcvCoinTitle); !ok {
+		return fmt.Errorf("unknown title %v", rcvCoinTitle)
+	}
+	rows := tb.DumpData()
+	for _, row := range rows {
+		var pay, rcv float64
+		payCoin := row[payCoinIndex]
+		rcvCoin := row[rcvCoinIndex]
+		if _, ok = coinsSum[payCoin]; !ok {
+			coinsSum[payCoin] = 0.0
+		}
+		if _, ok = coinsSum[rcvCoin]; !ok {
+			coinsSum[rcvCoin] = 0.0
+		}
+		payStr := row[payCoinIndex+1]
+		if payStr != "" {
+			pay, _ = strconv.ParseFloat(payStr, 64)
+		}
+		rcvStr := row[rcvCoinIndex+1]
+		if rcvStr != "" {
+			rcv, _ = strconv.ParseFloat(rcvStr, 64)
+		}
+		coinsSum[payCoin] -= pay
+		coinsSum[rcvCoin] += rcv
+	}
+
+	tb.AddStatistics([]string{"", ""})
+	tb.AddStatistics([]string{"", ""})
+	tb.AddStatistics([]string{"Statistics:"})
+	tb.AddStatistics([]string{"Currency", "Total Sum"})
+	for coin, sum := range coinsSum {
+		tb.AddStatistics([]string{coin, strconv.FormatFloat(sum, 'f', 6, 64)})
+	}
+	return nil
 }
