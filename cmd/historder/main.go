@@ -20,6 +20,12 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Build version ...
+var (
+	BuildVersion string
+	BuildTime    string
+)
+
 const (
 	cfgName  = "historder"
 	auth0URL = "https://sdce.au.auth0.com/oauth/token"
@@ -44,6 +50,7 @@ type searchConfig struct {
 }
 
 func main() {
+	log.Infof("version: %v%v", BuildVersion, BuildTime)
 	err := os.Chdir(filepath.Dir(os.Args[0]))
 	if err != nil {
 		panic(err)
